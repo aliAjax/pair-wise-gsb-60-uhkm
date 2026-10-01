@@ -21,7 +21,7 @@ export async function listSignals(filters: SignalFilters = {}): Promise<SignalCa
           .includes(query);
       const matchesStatus = !filters.status || filters.status === 'all' || signal.status === filters.status;
       const matchesRisk =
-        !filters.riskLevel || filters.riskLevel === 'all' || signal.riskLevel === filters.riskLevel;
+        !filters.riskLevel || filters.riskLevel === 'all' || signal.readings.riskLevel === filters.riskLevel;
       const matchesSource =
         !filters.sourceType || filters.sourceType === 'all' || signal.sourceType === filters.sourceType;
       return matchesQuery && matchesStatus && matchesRisk && matchesSource;
@@ -38,9 +38,13 @@ export function exportSignalReport(id: string) {
     product: signal.product,
     batch: signal.batch,
     status: signal.status,
-    riskLevel: signal.riskLevel,
+    readingsVersion: signal.readings.version,
+    riskLevel: signal.readings.riskLevel,
+    readings: signal.readings,
+    readingsHistory: signal.readingsHistory,
+    recalcJob: signal.recalcJob ?? null,
     conclusion: signal.versions[0]?.summary ?? '尚未形成核查结论',
-    evidence: signal.evidence,
+    evidence: signal.evidence.map((item) => ({ ...item, active: !item.superseded })),
     audit: signal.audit
   };
 

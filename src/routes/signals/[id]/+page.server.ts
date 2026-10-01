@@ -1,5 +1,11 @@
 import { fail } from '@sveltejs/kit';
-import { evidenceSchema, transitionSchema, versionSchema } from '$lib/models/signal';
+import {
+  confirmReadingsSchema,
+  correctEvidenceSchema,
+  evidenceSchema,
+  transitionSchema,
+  versionSchema
+} from '$lib/models/signal';
 
 export function load({ params }) {
   return { id: params.id };
@@ -63,6 +69,51 @@ export const actions = {
         createdAt: new Date().toISOString()
       },
       actor: parsed.data.author
+    };
+  },
+
+  correctEvidence: async ({ request }) => {
+    const formData = await request.formData();
+    const parsed = correctEvidenceSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) return failure(parsed.error);
+
+    const timestamp = new Date().toISOString();
+    return {
+      success: true,
+      correction: {
+        id: parsed.data.id,
+        evidenceId: parsed.data.evidenceId,
+        item: {
+          type: parsed.data.evidenceType,
+          title: parsed.data.title,
+          source: parsed.data.source,
+          strength: parsed.data.strength,
+          batch: parsed.data.batch,
+          note: parsed.data.note,
+          reports: parsed.data.reports,
+          exposed: parsed.data.exposed
+        },
+        actor: parsed.data.actor,
+        reason: parsed.data.reason,
+        createdAt: timestamp
+      }
+    };
+  },
+
+  confirmReadings: async ({ request }) => {
+    const formData = await request.formData();
+    const parsed = confirmReadingsSchema.safeParse(Object.fromEntries(formData));
+    if (!parsed.success) return failure(parsed.error);
+
+    return {
+      success: true,
+      confirm: {
+        id: parsed.data.id,
+        jobId: parsed.data.jobId,
+        reviewer: parsed.data.reviewer,
+        note: parsed.data.note,
+        confirmedAt: new Date().toISOString()
+      }
     };
   },
 

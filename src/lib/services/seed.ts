@@ -1,4 +1,31 @@
-import type { SignalCase } from '$lib/models/signal';
+import type { SignalCase, SignalReadings } from '$lib/models/signal';
+
+function baselineReadings(input: {
+  version?: number;
+  reportCount: number;
+  exposedUnits: number;
+  riskLevel: SignalReadings['riskLevel'];
+  affectedBatches: string[];
+  basis: string;
+  confirmedAt: string;
+  confirmedBy: string;
+}): SignalReadings {
+  return {
+    version: input.version ?? 1,
+    reportCount: input.reportCount,
+    exposedUnits: input.exposedUnits,
+    occurrenceRate:
+      input.exposedUnits > 0
+        ? Math.round((input.reportCount / input.exposedUnits) * 10000) / 100
+        : 0,
+    riskLevel: input.riskLevel,
+    affectedBatches: input.affectedBatches,
+    basis: input.basis,
+    confirmedAt: input.confirmedAt,
+    confirmedBy: input.confirmedBy,
+    confirmNote: '台账、批次追踪与趋势核对三处一致的初始基线读数。'
+  };
+}
 
 export const seedSignals: SignalCase[] = [
   {
@@ -19,6 +46,17 @@ export const seedSignals: SignalCase[] = [
     owner: '周宁',
     description: '投诉、维修与现场报告均出现阻塞压力提前触发，集中在同一批高分子管路。',
     affectedBatches: ['IP8-260401', 'IP8-260403'],
+    readings: baselineReadings({
+      reportCount: 17,
+      exposedUnits: 2048,
+      riskLevel: 'high',
+      affectedBatches: ['IP8-260401', 'IP8-260403'],
+      basis:
+        'V1 基线：合并投诉工单 11 条与维修记录 6 条（共 17 条），暴露台数取两批管路装机量 2048 台；批号覆盖 IP8-260401 与留样批 IP8-260403；相反证据（留样测试）报告数计 0。',
+      confirmedAt: '2026-09-24T10:00:00.000Z',
+      confirmedBy: '周宁'
+    }),
+    readingsHistory: [],
     evidence: [
       {
         id: 'E-018-01',
@@ -28,7 +66,9 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'IP8-260401',
         note: '报警发生时间集中在装机后第 7 至 14 天。',
-        createdAt: '2026-09-09T02:30:00.000Z'
+        createdAt: '2026-09-09T02:30:00.000Z',
+        reports: 11,
+        exposed: 2048
       },
       {
         id: 'E-018-02',
@@ -38,7 +78,9 @@ export const seedSignals: SignalCase[] = [
         strength: 'moderate',
         batch: 'IP8-260401',
         note: '更换传感器后 3 台设备未复现，不能排除装配扭矩影响。',
-        createdAt: '2026-09-14T06:20:00.000Z'
+        createdAt: '2026-09-14T06:20:00.000Z',
+        reports: 6,
+        exposed: 2048
       },
       {
         id: 'E-018-03',
@@ -48,7 +90,9 @@ export const seedSignals: SignalCase[] = [
         strength: 'contrary',
         batch: 'IP8-260403',
         note: '留样在标准测试条件下未出现同类波动，需补充现场使用条件。',
-        createdAt: '2026-09-24T09:15:00.000Z'
+        createdAt: '2026-09-24T09:15:00.000Z',
+        reports: 0,
+        exposed: 2048
       }
     ],
     tasks: [
@@ -114,6 +158,17 @@ export const seedSignals: SignalCase[] = [
     owner: '林澈',
     description: '医院反馈满电后连续使用时间下降约 23%，尚未发现患者伤害。',
     affectedBatches: ['M12-251118'],
+    readings: baselineReadings({
+      reportCount: 9,
+      exposedUnits: 876,
+      riskLevel: 'medium',
+      affectedBatches: ['M12-251118'],
+      basis:
+        'V1 基线：区域维修中心容量测试覆盖 6 台、现场服务报告补充 3 条（共 9 条），暴露台数取该批装机量 876 台；批号覆盖 M12-251118；弱支持证据未重复计报告。',
+      confirmedAt: '2026-09-25T04:25:00.000Z',
+      confirmedBy: '林澈'
+    }),
+    readingsHistory: [],
     evidence: [
       {
         id: 'E-015-01',
@@ -123,7 +178,9 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'M12-251118',
         note: '6 台设备容量均低于出厂规格下限。',
-        createdAt: '2026-08-25T03:10:00.000Z'
+        createdAt: '2026-08-25T03:10:00.000Z',
+        reports: 9,
+        exposed: 876
       },
       {
         id: 'E-015-02',
@@ -133,7 +190,9 @@ export const seedSignals: SignalCase[] = [
         strength: 'weak',
         batch: 'M12-251118',
         note: '两家医院使用相同型号充电柜，使用条件尚不一致。',
-        createdAt: '2026-09-02T07:20:00.000Z'
+        createdAt: '2026-09-02T07:20:00.000Z',
+        reports: 0,
+        exposed: 876
       }
     ],
     tasks: [
@@ -185,6 +244,17 @@ export const seedSignals: SignalCase[] = [
     owner: '高远',
     description: '测量结果在切换显示器缩放比例后发生偏差，重启软件可恢复。',
     affectedBatches: ['SW-5.3.1'],
+    readings: baselineReadings({
+      reportCount: 4,
+      exposedUnits: 310,
+      riskLevel: 'low',
+      affectedBatches: ['SW-5.3.1'],
+      basis:
+        'V1 基线：合并 4 条现场测量偏差报告，暴露台数取 5.3.1 版本装机 310 台；批号（软件版本）覆盖 SW-5.3.1。',
+      confirmedAt: '2026-08-18T09:30:00.000Z',
+      confirmedBy: '高远'
+    }),
+    readingsHistory: [],
     evidence: [
       {
         id: 'E-011-01',
@@ -194,7 +264,9 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'SW-5.3.1',
         note: '连续执行 500 次缩放切换未复现。',
-        createdAt: '2026-08-10T02:00:00.000Z'
+        createdAt: '2026-08-10T02:00:00.000Z',
+        reports: 4,
+        exposed: 310
       }
     ],
     tasks: [
@@ -246,6 +318,17 @@ export const seedSignals: SignalCase[] = [
     owner: '顾岚',
     description: '一台设备充电模组外壳变形并触发过温保护，现场已停用同批 12 台设备。',
     affectedBatches: ['D9-260722'],
+    readings: baselineReadings({
+      reportCount: 3,
+      exposedUnits: 120,
+      riskLevel: 'critical',
+      affectedBatches: ['D9-260722'],
+      basis:
+        'V1 基线：不良事件报告 3 条（含 1 起过温保护触发），暴露台数取同批在用量 120 台；拆机热成像证据不计新增报告；批号覆盖 D9-260722。',
+      confirmedAt: '2026-09-28T11:40:00.000Z',
+      confirmedBy: '顾岚'
+    }),
+    readingsHistory: [],
     evidence: [
       {
         id: 'E-019-01',
@@ -255,7 +338,9 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'D9-260722',
         note: '设备未造成人员伤害，但备用电池无法完成充电。',
-        createdAt: '2026-09-22T00:30:00.000Z'
+        createdAt: '2026-09-22T00:30:00.000Z',
+        reports: 3,
+        exposed: 120
       },
       {
         id: 'E-019-02',
@@ -265,7 +350,9 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'D9-260722',
         note: '两套模组焊点阻抗偏高，温度高于控制上限。',
-        createdAt: '2026-09-27T08:00:00.000Z'
+        createdAt: '2026-09-27T08:00:00.000Z',
+        reports: 0,
+        exposed: 120
       }
     ],
     tasks: [

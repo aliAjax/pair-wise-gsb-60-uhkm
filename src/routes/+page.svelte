@@ -1,21 +1,28 @@
 <script lang="ts">
+  import ReadingsBadge from '$lib/components/ReadingsBadge.svelte';
   import RiskBadge from '$lib/components/RiskBadge.svelte';
+  import { isReadingsStale } from '$lib/services/readings';
   import { signalStore } from '$lib/stores/signal-store';
 
   $: signals = $signalStore;
   $: openSignals = signals.filter((signal) => signal.status !== 'closed');
   $: criticalSignals = signals.filter(
-    (signal) => signal.riskLevel === 'critical' || signal.riskLevel === 'high'
+    (signal) =>
+      signal.readings.riskLevel === 'critical' || signal.readings.riskLevel === 'high'
   );
   $: overdueTasks = signals.flatMap((signal) =>
     signal.tasks
       .filter((task) => task.status !== 'done' && task.dueAt < new Date().toISOString().slice(0, 10))
       .map((task) => ({ ...task, signalId: signal.id }))
   );
+  $: recalculatingSignals = signals.filter((signal) => isReadingsStale(signal));
+  $: awaitingReview = signals.filter(
+    (signal) => signal.recalcJob?.status === 'awaiting_review'
+  );
 
   $: metrics = [
     { label: '开放信号', value: openSignals.length, note: '含调查、观察与处置队列' },
-    { label: '高及以上风险', value: criticalSignals.length, note: '需复核人优先确认' },
+    { label: '高及以上风险', value: criticalSignals.length, note: '按当前读数版本计算' },
     {
       label: '未关闭任务',
       value: signals.flatMap((signal) => signal.tasks).filter((task) => task.status !== 'done').length,
@@ -35,6 +42,30 @@
   </div>
   <a class="btn variant-filled-primary" href="/signals">进入信号台账</a>
 </div>
+
+{#if recalculatingSignals.length > 0}
+  <section class="mb-6 rounded border border-amber-300 bg-amber-50 p-4">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+              <p class="text-sm font-medium text-amber-900">
+                {recalculatingSignals.length} 个信号存在未完成的证据重算：台账、批次追踪、趋势核对继续展示上一版完整结果并标明未完成。
+              </p>
+              {#if awaitingReview.length > 0}
+                <a class="btn btn-sm variant-filled-primary" href={`/signals/${awaitingReview[0].id}`}>
+                  {awaitingReview.length} 个待复核版本，前往确认换版
+                </a>
+              {/if}
+    </div>
+    <ul class="mt-2 flex flex-wrap gap-2">
+      {#each recalculatingSignals as signal}
+        <li>
+          <a class="badge bg-white text-amber-900 hover:underline" href={`/signals/${signal.id}`}>
+            {signal.id} · {signal.recalcJob?.status === 'awaiting_review' ? '待复核' : signal.recalcJob?.status === 'archive_retrying' ? '存档重试' : '重算中'}
+          </a>
+        </li>
+      {/each}
+    </ul>
+  </section>
+{/if}
 
 <section class="workspace-grid mb-6">
   {#each metrics as metric}
@@ -57,16 +88,21 @@
     </div>
     <div class="divide-y divide-surface-300-700">
       {#each signals.slice(0, 4) as signal}
+        {@const stale = isReadingsStale(signal)}
         <a class="block px-4 py-4 hover:bg-surface-200-800" href={`/signals/${signal.id}`}>
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
               <p class="text-xs text-surface-500-400">{signal.id} · {signal.product}</p>
               <h3 class="mt-1 font-medium">{signal.title}</h3>
             </div>
-            <RiskBadge risk={signal.riskLevel} status={signal.status} />
+            <div class="flex flex-col items-end gap-1">
+              <RiskBadge risk={signal.readings.riskLevel} status={signal.status} />
+              <ReadingsBadge {signal} />
+            </div>
           </div>
           <p class="mt-2 text-sm text-surface-600-300">
-            {signal.reportCount} 条报告 · 发生率 {signal.occurrenceRate.toFixed(2)}% · 负责人 {signal.owner}
+            {signal.readings.reportCount} 条报告 · 发生率 {signal.readings.occurrenceRate.toFixed(2)}% · 负责人 {signal.owner}
+            {#if stale}<span class="ml-1 text-xs text-amber-800 dark:text-amber-300">（读数上一版，重算未完成）</span>{/if}
           </p>
         </a>
       {/each}

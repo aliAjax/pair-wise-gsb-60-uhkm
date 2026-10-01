@@ -1,5 +1,12 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { resumeUnfinishedJobs } from '$lib/services/recalc-service';
+
+  onMount(() => {
+    // 刷新/重开页面后，未完成重算作业自最后检查点续算，上一版读数继续展示
+    resumeUnfinishedJobs();
+  });
 
   const navItems = [
     { href: '/', label: '总览', short: '览' },

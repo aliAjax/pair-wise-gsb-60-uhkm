@@ -23,7 +23,12 @@
     queryFn: () => listSignals(filters)
   });
 
-  $: signals = ($query.data ?? []) as SignalCase[];
+  // query 有 10 秒 staleTime，重算/确认推进期间用 store 快照按 id 合并，保证台账读到最新读数版本
+  $: queriedSignals = ($query.data ?? []) as SignalCase[];
+  $: latestById = new Map($signalStore.map((item) => [item.id, item]));
+  $: signals = queriedSignals
+    .map((item) => latestById.get(item.id) ?? item)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   $: statusCounts = signals.reduce<Record<string, number>>((counts, signal) => {
     counts[signal.status] = (counts[signal.status] ?? 0) + 1;
     return counts;

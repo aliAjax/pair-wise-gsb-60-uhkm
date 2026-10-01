@@ -1,5 +1,7 @@
 <script lang="ts">
   import type { SignalCase } from '$lib/models/signal';
+  import { isReadingsStale } from '$lib/services/readings';
+  import ReadingsBadge from './ReadingsBadge.svelte';
   import RiskBadge from './RiskBadge.svelte';
 
   export let signals: SignalCase[];
@@ -13,12 +15,13 @@
 </script>
 
 <div class="overflow-x-auto">
-  <table class="data-table min-w-[960px]">
+  <table class="data-table min-w-[1020px]">
     <thead>
       <tr>
         <th>信号</th>
         <th>产品 / 批号</th>
         <th>风险与状态</th>
+        <th>读数版本</th>
         <th>发生率</th>
         <th>负责人</th>
         <th>更新时间</th>
@@ -27,7 +30,8 @@
     </thead>
     <tbody>
       {#each signals as signal (signal.id)}
-        <tr>
+        {@const stale = isReadingsStale(signal)}
+        <tr class={stale ? 'bg-amber-50/60 dark:bg-amber-950/20' : ''}>
           <td>
             <a class="font-semibold text-primary-700-300 hover:underline" href={`/signals/${signal.id}`}>
               {signal.id}
@@ -37,22 +41,29 @@
           </td>
           <td>
             <p class="font-medium">{signal.product}</p>
-            <p class="text-sm text-surface-500-400">{signal.batch}</p>
+            <p class="text-sm text-surface-500-400">{signal.readings.affectedBatches.join('、')}</p>
           </td>
-          <td><RiskBadge risk={signal.riskLevel} status={signal.status} /></td>
+          <td><RiskBadge risk={signal.readings.riskLevel} status={signal.status} /></td>
+          <td><ReadingsBadge {signal} /></td>
           <td>
-            <p class="metric-value font-semibold">{signal.occurrenceRate.toFixed(2)}%</p>
-            <p class="text-xs text-surface-500-400">{signal.reportCount} 条报告</p>
+            <p class="metric-value font-semibold {stale ? 'text-amber-800 dark:text-amber-300' : ''}">
+              {signal.readings.occurrenceRate.toFixed(2)}%
+            </p>
+            <p class="text-xs text-surface-500-400">
+              {signal.readings.reportCount} 条报告{stale ? '（上一版）' : ''}
+            </p>
           </td>
           <td>{signal.owner}</td>
           <td>{signal.updatedAt.slice(0, 10)}</td>
           <td>
-            <a class="btn btn-sm variant-soft-primary" href={`/signals/${signal.id}`}>打开核查</a>
+            <a class="btn btn-sm variant-soft-primary" href={`/signals/${signal.id}`}>
+              {signal.recalcJob?.status === 'awaiting_review' ? '前往复核' : '打开核查'}
+            </a>
           </td>
         </tr>
       {:else}
         <tr>
-          <td colspan="7" class="py-12 text-center text-surface-500-400">没有符合当前条件的信号。</td>
+          <td colspan="8" class="py-12 text-center text-surface-500-400">没有符合当前条件的信号。</td>
         </tr>
       {/each}
     </tbody>

@@ -1,8 +1,17 @@
 <script lang="ts">
+  import ReadingsBadge from '$lib/components/ReadingsBadge.svelte';
   import TrendChart from '$lib/components/TrendChart.svelte';
+  import { isReadingsStale } from '$lib/services/readings';
   import { signalStore } from '$lib/stores/signal-store';
 
   $: signals = $signalStore;
+  $: thresholdSignals = signals.filter((signal) => signal.readings.occurrenceRate >= 0.75);
+  $: staleCount = signals.filter((signal) => isReadingsStale(signal)).length;
+  $: totalReports = signals.reduce((sum, signal) => sum + signal.readings.reportCount, 0);
+  $: batchReports = signals
+    .filter((signal) => signal.readings.affectedBatches.includes('IP8-260401'))
+    .reduce((sum, signal) => sum + signal.readings.reportCount, 0);
+  $: batchShare = totalReports > 0 ? ((batchReports / totalReports) * 100).toFixed(1) : '0.0';
   const trendPoints = [
     { label: '2026-04', value: 0.18, threshold: 0.75 },
     { label: '2026-05', value: 0.31, threshold: 0.75 },
@@ -19,6 +28,12 @@
   <h1 class="text-2xl font-semibold">发生率趋势核对</h1>
   <p class="mt-1 text-sm text-surface-600-300">对比月度核查发生率与预设监测阈值，识别持续上升和短时聚集。</p>
 </div>
+
+{#if staleCount > 0}
+  <div class="mb-5 rounded border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+    {staleCount} 个信号的趋势读数已随证据更正失效、重算未完成；下表发生率仍给出上一版完整结果并逐条标明版本，复核确认后与台账、批次追踪一起换读。
+  </div>
+{/if}
 
 <div class="grid gap-6 xl:grid-cols-[minmax(0,2fr)_minmax(300px,1fr)]">
   <section class="rounded border border-surface-300-700 bg-surface-100-900 p-5">
@@ -41,7 +56,7 @@
       </div>
       <div class="border-l-2 border-teal-600 pl-3">
         <p class="font-medium">批号集中度明显</p>
-        <p class="mt-1 text-surface-500-400">当前 13 条报告关联 IP8-260401，占总报告 76.5%。</p>
+        <p class="mt-1 text-surface-500-400">当前 {batchReports} 条报告关联 IP8-260401，占总报告 {batchShare}%（取自当前读数版本）。</p>
       </div>
     </div>
   </aside>
@@ -57,6 +72,7 @@
         <tr>
           <th>信号</th>
           <th>产品</th>
+          <th>读数版本</th>
           <th>报告数</th>
           <th>核查发生率</th>
           <th>当前判断</th>
@@ -64,14 +80,23 @@
         </tr>
       </thead>
       <tbody>
-        {#each signals.filter((signal) => signal.occurrenceRate >= 0.75) as signal}
-          <tr>
+        {#each thresholdSignals as signal}
+          {@const stale = isReadingsStale(signal)}
+          <tr class={stale ? 'bg-amber-50/60 dark:bg-amber-950/20' : ''}>
             <td>{signal.id}</td>
             <td>{signal.product}</td>
-            <td>{signal.reportCount}</td>
-            <td class="metric-value">{signal.occurrenceRate.toFixed(2)}%</td>
-            <td>超过或接近阈值</td>
-            <td><a class="btn btn-sm variant-soft-primary" href={`/signals/${signal.id}`}>核对详情</a></td>
+            <td><ReadingsBadge {signal} /></td>
+            <td>{signal.readings.reportCount}</td>
+            <td class="metric-value {stale ? 'text-amber-800 dark:text-amber-300' : ''}">
+              {signal.readings.occurrenceRate.toFixed(2)}%
+              {#if stale}<span class="ml-1 text-xs font-normal">（上一版）</span>{/if}
+            </td>
+            <td>{stale ? '重算未完成·沿用上一版' : '超过或接近阈值'}</td>
+            <td>
+              <a class="btn btn-sm variant-soft-primary" href={`/signals/${signal.id}`}>
+                {signal.recalcJob?.status === 'awaiting_review' ? '前往复核' : '核对详情'}
+              </a>
+            </td>
           </tr>
         {/each}
       </tbody>

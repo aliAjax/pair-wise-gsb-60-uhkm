@@ -14,8 +14,15 @@
         product: signal.product,
         batch: signal.batch,
         status: signal.status,
-        risk: signal.riskLevel,
+        risk: signal.readings.riskLevel,
+        readings: signal.readings,
+        readingsHistory: signal.readingsHistory,
+        recalcJob: signal.recalcJob ?? null,
         conclusion: signal.versions[0] ?? null,
+        evidence: signal.evidence.map((item) => ({
+          ...item,
+          active: !item.superseded
+        })),
         audit: signal.audit
       }))
     };
