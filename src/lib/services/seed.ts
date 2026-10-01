@@ -28,6 +28,7 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'IP8-260401',
         note: '报警发生时间集中在装机后第 7 至 14 天。',
+        reports: 11,
         createdAt: '2026-09-09T02:30:00.000Z'
       },
       {
@@ -38,6 +39,7 @@ export const seedSignals: SignalCase[] = [
         strength: 'moderate',
         batch: 'IP8-260401',
         note: '更换传感器后 3 台设备未复现，不能排除装配扭矩影响。',
+        reports: 4,
         createdAt: '2026-09-14T06:20:00.000Z'
       },
       {
@@ -48,9 +50,11 @@ export const seedSignals: SignalCase[] = [
         strength: 'contrary',
         batch: 'IP8-260403',
         note: '留样在标准测试条件下未出现同类波动，需补充现场使用条件。',
+        reports: 2,
         createdAt: '2026-09-24T09:15:00.000Z'
       }
     ],
+    corrections: [],
     tasks: [
       {
         id: 'T-018-01',
@@ -123,6 +127,7 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'M12-251118',
         note: '6 台设备容量均低于出厂规格下限。',
+        reports: 8,
         createdAt: '2026-08-25T03:10:00.000Z'
       },
       {
@@ -133,9 +138,11 @@ export const seedSignals: SignalCase[] = [
         strength: 'weak',
         batch: 'M12-251118',
         note: '两家医院使用相同型号充电柜，使用条件尚不一致。',
+        reports: 1,
         createdAt: '2026-09-02T07:20:00.000Z'
       }
     ],
+    corrections: [],
     tasks: [
       {
         id: 'T-015-01',
@@ -194,9 +201,11 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'SW-5.3.1',
         note: '连续执行 500 次缩放切换未复现。',
+        reports: 4,
         createdAt: '2026-08-10T02:00:00.000Z'
       }
     ],
+    corrections: [],
     tasks: [
       {
         id: 'T-011-01',
@@ -255,6 +264,7 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'D9-260722',
         note: '设备未造成人员伤害，但备用电池无法完成充电。',
+        reports: 1,
         createdAt: '2026-09-22T00:30:00.000Z'
       },
       {
@@ -265,9 +275,11 @@ export const seedSignals: SignalCase[] = [
         strength: 'strong',
         batch: 'D9-260722',
         note: '两套模组焊点阻抗偏高，温度高于控制上限。',
+        reports: 2,
         createdAt: '2026-09-27T08:00:00.000Z'
       }
     ],
+    corrections: [],
     tasks: [
       {
         id: 'T-019-01',

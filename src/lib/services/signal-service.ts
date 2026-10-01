@@ -1,6 +1,7 @@
 import { get } from 'svelte/store';
 import type { SignalCase, SignalFilters } from '$lib/models/signal';
 import { signalStore } from '$lib/stores/signal-store';
+import { readModel, recalcInvalidations } from './recalc-store';
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,6 +34,10 @@ export function exportSignalReport(id: string) {
   const signal = get(signalStore).find((item) => item.id === id);
   if (!signal) return;
 
+  const model = get(readModel);
+  const reading = model.signals.find((item) => item.signalId === id);
+  const invalidation = get(recalcInvalidations).find((item) => item.signalId === id);
+
   const report = {
     generatedAt: new Date().toISOString(),
     product: signal.product,
@@ -40,6 +45,26 @@ export function exportSignalReport(id: string) {
     status: signal.status,
     riskLevel: signal.riskLevel,
     conclusion: signal.versions[0]?.summary ?? '尚未形成核查结论',
+    publishedReading: reading
+      ? {
+          modelVersion: model.version,
+          publishedAt: model.publishedAt,
+          reportCount: reading.reportCount,
+          exposedUnits: reading.exposedUnits,
+          occurrenceRate: reading.occurrenceRate,
+          affectedBatches: reading.affectedBatches,
+          evidenceBasis: reading.evidenceBasis
+        }
+      : null,
+    readingStale: invalidation
+      ? {
+          invalidatedAt: invalidation.invalidatedAt,
+          staleFromVersion: invalidation.staleFromVersion,
+          reason: invalidation.reason,
+          jobId: invalidation.jobId
+        }
+      : null,
+    corrections: signal.corrections,
     evidence: signal.evidence,
     audit: signal.audit
   };

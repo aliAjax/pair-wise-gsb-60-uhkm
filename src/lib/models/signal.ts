@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import type { EvidenceCorrection } from './recalc';
 
 export const signalStatuses = [
   'new',
@@ -36,6 +37,12 @@ export const evidenceSchema = z.object({
   source: z.string().trim().min(2, '请填写来源'),
   strength: z.enum(evidenceStrengths),
   batch: z.string().trim().min(1, '请填写关联批号'),
+  reports: z.coerce
+    .number({ message: '归因报告数需为 0 及以上的整数' })
+    .int('归因报告数需为整数')
+    .min(0, '归因报告数不能为负')
+    .max(9999)
+    .default(1),
   note: z.string().trim().min(4, '请填写核查说明')
 });
 
@@ -60,6 +67,8 @@ export interface EvidenceItem {
   source: string;
   strength: EvidenceStrength;
   batch: string;
+  /** 该证据归因的报告条数，台账/趋势发生率重算的依据 */
+  reports: number;
   note: string;
   createdAt: string;
 }
@@ -109,6 +118,8 @@ export interface SignalCase {
   description: string;
   affectedBatches: string[];
   evidence: EvidenceItem[];
+  /** 证据更正记录（安全团队更正证据后保留前后字段与依据） */
+  corrections: EvidenceCorrection[];
   tasks: InvestigationTask[];
   versions: CaseVersion[];
   audit: AuditEntry[];

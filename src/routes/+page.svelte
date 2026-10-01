@@ -1,8 +1,13 @@
 <script lang="ts">
+  import ReadingVersionBadge from '$lib/components/ReadingVersionBadge.svelte';
   import RiskBadge from '$lib/components/RiskBadge.svelte';
+  import { readModel, recalcInvalidations } from '$lib/services/recalc-store';
   import { signalStore } from '$lib/stores/signal-store';
 
   $: signals = $signalStore;
+  $: model = $readModel;
+  $: staleIds = new Set($recalcInvalidations.map((item) => item.signalId));
+  const readingOf = (id: string) => model.signals.find((item) => item.signalId === id);
   $: openSignals = signals.filter((signal) => signal.status !== 'closed');
   $: criticalSignals = signals.filter(
     (signal) => signal.riskLevel === 'critical' || signal.riskLevel === 'high'
@@ -21,7 +26,7 @@
       value: signals.flatMap((signal) => signal.tasks).filter((task) => task.status !== 'done').length,
       note: '跨信号调查任务'
     },
-    { label: '逾期任务', value: overdueTasks.length, note: '按任务截止日计算' }
+    { label: '读数待重算确认', value: staleIds.size, note: `上一版 V${model.version} 继续有效` }
   ];
 </script>
 
@@ -57,6 +62,7 @@
     </div>
     <div class="divide-y divide-surface-300-700">
       {#each signals.slice(0, 4) as signal}
+        {@const reading = readingOf(signal.id)}
         <a class="block px-4 py-4 hover:bg-surface-200-800" href={`/signals/${signal.id}`}>
           <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
@@ -66,8 +72,9 @@
             <RiskBadge risk={signal.riskLevel} status={signal.status} />
           </div>
           <p class="mt-2 text-sm text-surface-600-300">
-            {signal.reportCount} 条报告 · 发生率 {signal.occurrenceRate.toFixed(2)}% · 负责人 {signal.owner}
+            {reading?.reportCount ?? signal.reportCount} 条报告 · 发生率 {(reading?.occurrenceRate ?? signal.occurrenceRate).toFixed(2)}% · 负责人 {signal.owner}
           </p>
+          <div class="mt-2"><ReadingVersionBadge signalId={signal.id} /></div>
         </a>
       {/each}
     </div>

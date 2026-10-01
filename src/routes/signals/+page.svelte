@@ -4,6 +4,7 @@
   import SignalTable from '$lib/components/SignalTable.svelte';
   import type { SignalCase, SignalFilters } from '$lib/models/signal';
   import { listSignals } from '$lib/services/signal-service';
+  import { readModel } from '$lib/services/recalc-store';
   import { signalStore } from '$lib/stores/signal-store';
   import type { ActionData } from './$types';
 
@@ -24,6 +25,8 @@
   });
 
   $: signals = ($query.data ?? []) as SignalCase[];
+  // 台账发生率/报告数/批次一律读已发布读数版本；重算未确认前保持上一版
+  $: publishedReadings = $readModel.signals;
   $: statusCounts = signals.reduce<Record<string, number>>((counts, signal) => {
     counts[signal.status] = (counts[signal.status] ?? 0) + 1;
     return counts;
@@ -165,6 +168,6 @@
   {:else if $query.isError}
     <div class="p-8 text-center text-error-700">信号台账读取失败。</div>
   {:else}
-    <SignalTable {signals} />
+    <SignalTable {signals} readings={publishedReadings} />
   {/if}
 </section>

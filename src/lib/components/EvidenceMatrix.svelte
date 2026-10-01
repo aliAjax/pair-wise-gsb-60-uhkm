@@ -1,7 +1,12 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
   import type { EvidenceItem } from '$lib/models/signal';
 
   export let evidence: EvidenceItem[];
+  /** 传入待更正证据 id 时，对应卡片显示"更正中"；不传则不显示更正按钮 */
+  export let correctingId: string | null = null;
+
+  const dispatch = createEventDispatcher<{ correct: EvidenceItem }>();
 
   const strengthLabels: Record<EvidenceItem['strength'], string> = {
     strong: '强支持',
@@ -34,14 +39,21 @@
           <p class="text-xs font-medium text-surface-500-400">{typeLabels[item.type]}</p>
           <h4 class="mt-1 font-semibold">{item.title}</h4>
         </div>
-        <span class="badge">{strengthLabels[item.strength]}</span>
+        <div class="flex flex-col items-end gap-2">
+          <span class="badge">{strengthLabels[item.strength]}</span>
+          <button class="btn btn-sm variant-soft-primary" type="button" on:click={() => dispatch('correct', item)}>
+            {correctingId === item.id ? '更正中…' : '更正记录'}
+          </button>
+        </div>
       </div>
       <p class="mt-3 text-sm text-surface-600-300">{item.note}</p>
       <div class="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-surface-500-400">
         <span>来源：{item.source}</span>
         <span>批号：{item.batch}</span>
+        <span>归因报告：{item.reports ?? 1} 条</span>
         <span>录入：{item.createdAt.slice(0, 10)}</span>
       </div>
     </article>
   {/each}
 </div>
+

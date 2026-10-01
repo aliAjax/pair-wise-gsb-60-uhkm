@@ -1,8 +1,12 @@
 <script lang="ts">
   import type { SignalCase } from '$lib/models/signal';
+  import type { SignalReading } from '$lib/models/recalc';
+  import ReadingVersionBadge from './ReadingVersionBadge.svelte';
   import RiskBadge from './RiskBadge.svelte';
 
   export let signals: SignalCase[];
+  /** 已发布读数版本（台账读这里，而不是直接读信号上的旧字段） */
+  export let readings: SignalReading[] = [];
 
   const sourceLabels: Record<SignalCase['sourceType'], string> = {
     complaint: '投诉',
@@ -10,6 +14,8 @@
     adverse_event: '不良事件',
     field_report: '现场报告'
   };
+
+  const readingOf = (id: string): SignalReading | undefined => readings.find((item) => item.signalId === id);
 </script>
 
 <div class="overflow-x-auto">
@@ -19,7 +25,7 @@
         <th>信号</th>
         <th>产品 / 批号</th>
         <th>风险与状态</th>
-        <th>发生率</th>
+        <th>发生率（已发布读数）</th>
         <th>负责人</th>
         <th>更新时间</th>
         <th>操作</th>
@@ -27,6 +33,7 @@
     </thead>
     <tbody>
       {#each signals as signal (signal.id)}
+        {@const reading = readingOf(signal.id)}
         <tr>
           <td>
             <a class="font-semibold text-primary-700-300 hover:underline" href={`/signals/${signal.id}`}>
@@ -37,12 +44,13 @@
           </td>
           <td>
             <p class="font-medium">{signal.product}</p>
-            <p class="text-sm text-surface-500-400">{signal.batch}</p>
+            <p class="text-sm text-surface-500-400">{(reading?.affectedBatches ?? [signal.batch]).join('、')}</p>
           </td>
           <td><RiskBadge risk={signal.riskLevel} status={signal.status} /></td>
           <td>
-            <p class="metric-value font-semibold">{signal.occurrenceRate.toFixed(2)}%</p>
-            <p class="text-xs text-surface-500-400">{signal.reportCount} 条报告</p>
+            <p class="metric-value font-semibold">{(reading?.occurrenceRate ?? signal.occurrenceRate).toFixed(2)}%</p>
+            <p class="text-xs text-surface-500-400">{reading?.reportCount ?? signal.reportCount} 条报告</p>
+            <div class="mt-1"><ReadingVersionBadge signalId={signal.id} /></div>
           </td>
           <td>{signal.owner}</td>
           <td>{signal.updatedAt.slice(0, 10)}</td>
@@ -58,3 +66,4 @@
     </tbody>
   </table>
 </div>
+
